@@ -46,7 +46,7 @@ jobs:
 
       - name: Prepare docker cache
         run: |
-          [[ ! -f tmp/docker/index.json ]] && docker buildx bake -f docker/buildx.hcl base
+          [[ -f tmp/docker/index.json ]] || docker buildx bake -f docker/buildx.hcl base
 
       - name: Build the Docker images
         run: |
