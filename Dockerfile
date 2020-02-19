@@ -10,8 +10,9 @@ COPY tsconfig.app.json tsconfig.app.json
 
 RUN yarn build:docker
 
-
-FROM amd64/ubuntu:18.04@sha256:bc025862c3e8ec4a8754ea4756e33da6c41cba38330d7e324abd25c8e0b93300
+# Cache image
+#============
+FROM amd64/ubuntu:18.04@sha256:bc025862c3e8ec4a8754ea4756e33da6c41cba38330d7e324abd25c8e0b93300 as final-base
 
 LABEL maintainer="Rhys Arkins <rhys@arkins.net>"
 LABEL name="renovate"
@@ -222,6 +223,15 @@ RUN curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version ${YARN_VER
 
 ENV PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:$PATH"
 
+
+
+ENTRYPOINT ["node", "/usr/src/app/dist/renovate.js"]
+CMD []
+
+# Final image
+#============
+FROM final-base as final
+
 COPY package.json .
 COPY yarn.lock .
 RUN yarn install --production --frozen-lockfile && yarn cache clean
@@ -233,6 +243,3 @@ COPY data data
 
 # Numeric user ID for the ubuntu user. Used to indicate a non-root user to OpenShift
 USER 1000
-
-ENTRYPOINT ["node", "/usr/src/app/dist/renovate.js"]
-CMD []

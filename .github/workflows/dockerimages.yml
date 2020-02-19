@@ -12,7 +12,7 @@ env:
   PLATFORM: linux/amd64
   DOCKER_CACHE_TAG: _cache
   DOCKER_REPO: renovate/renovate
-  CACHE_VERSION: v1
+  CACHE_VERSION: v2
 
 jobs:
   build:
@@ -20,10 +20,6 @@ jobs:
     runs-on: ubuntu-latest
 
     timeout-minutes: 30
-
-    strategy:
-      matrix:
-        tag: [renovate, renovate-slim]
 
     steps:
       - name: Set up Docker Buildx
@@ -37,33 +33,37 @@ jobs:
       - run: docker buildx ls
 
       - name: Cache docker layer
+        id: docker_cache
         uses: actions/cache@v1
         with:
           path: tmp/docker
-          key: docker_cache-${{ env.CACHE_VERSION }}-${{ matrix.tag }}-${{ hashFiles('Dockerfile*') }}-${{ hashFiles('**/yarn.lock') }}
+          key: docker_cache-${{ env.CACHE_VERSION }}-${{ hashFiles('Dockerfile*') }}
           restore-keys: |
-            docker_cache-${{ env.CACHE_VERSION }}-${{ matrix.tag }}-
+            docker_cache-${{ env.CACHE_VERSION }}-
 
-      - name: Prepare docker cache
+      - name: Build docker cache
+        if: steps.yarn_cache_packages.outputs.cache-hit != 'true'
         run: |
-          [[ -f tmp/docker/index.json ]] || docker buildx bake -f docker/buildx.hcl base
+          docker buildx bake -f docker/buildx.hcl cache
 
       - name: Build the Docker images
         run: |
           docker buildx bake -f docker/buildx.hcl \
-            --set ${{ matrix.tag }}.cache-from=type=local,src=tmp/docker,mode=max \
-            --set ${{ matrix.tag }}.cache-to=type=local,dest=tmp/docker,mode=max \
-            --set ${{ matrix.tag }}.tags=${{ matrix.tag }} ${{ matrix.tag }} \
-            --set ${{ matrix.tag }}.output=type=docker
+            --set renovate-full.cache-from=type=local,src=tmp/docker/full,mode=max \
+            --set renovate-slim.cache-from=type=local,src=tmp/docker/slim,mode=max \
+            --set settings.output=type=docker
 
       - name: Test the Docker image
         run: |
-          docker run --rm -t ${{ matrix.tag }} --version
+          docker run --rm -t ${DOCKER_REPO} --version
+          docker run --rm -t ${DOCKER_REPO}:slim --version
 
       - name: Image history
-        run: docker history ${{ matrix.tag }}
+        run: |
+          docker history ${DOCKER_REPO}
+          docker history ${DOCKER_REPO}:slim
       - name: Image size
-        run: docker image ls | grep ${{ matrix.tag }}
+        run: docker image ls | grep ${DOCKER_REPO}
 
   test-docker:
     runs-on: ubuntu-latest
@@ -80,25 +80,15 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: Cache slim docker layer
+      - name: Cache docker layer
         uses: actions/cache@v1
         with:
-          path: tmp/docker/slim
-          key: docker_cache-${{ env.CACHE_VERSION }}-renovate-slim-${{ hashFiles('Dockerfile*') }}-${{ hashFiles('**/yarn.lock') }}
-
-      - name: Cache full docker layer
-        uses: actions/cache@v1
-        with:
-          path: tmp/docker/full
-          key: docker_cache-${{ env.CACHE_VERSION }}-renovate-${{ hashFiles('Dockerfile*') }}-${{ hashFiles('**/yarn.lock') }}
+          path: tmp/docker
+          key: docker_cache-${{ env.CACHE_VERSION }}-${{ hashFiles('Dockerfile*') }}
 
       - name: Build the Docker images
         run: |
           docker buildx bake -f docker/buildx.hcl \
-            --set renovate.cache-from=type=local,src=tmp/docker/full \
-            --set renovate-slim.cache-from=type=local,src=tmp/docker/slim \
-            --set cache.output=type=docker \
+            --set renovate-full.cache-from=type=local,src=tmp/docker/full,mode=max \
+            --set renovate-slim.cache-from=type=local,src=tmp/docker/slim,mode=max \
             default
-
-      - name: Image size
-        run: docker image ls | grep renovate
