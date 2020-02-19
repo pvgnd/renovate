@@ -12,6 +12,7 @@ env:
   PLATFORM: linux/amd64
   DOCKER_CACHE_TAG: _cache
   DOCKER_REPO: renovate/renovate
+  CACHE_VERSION: v1
 
 jobs:
   build:
@@ -20,20 +21,7 @@ jobs:
 
     timeout-minutes: 20
 
-    strategy:
-      matrix:
-        tag: [slim] #latest
-
-    env:
-      DOCKER_FILE: Dockerfile.${{ matrix.tag }}
-      DOCKER_TAG: ${{ matrix.tag }}
-
     steps:
-      - name: Overwrite env for latest tag
-        if: matrix.tag == 'latest'
-        run: |
-          echo "::set-env name=DOCKER_FILE::Dockerfile"
-
       - name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
@@ -44,27 +32,28 @@ jobs:
 
       - run: docker buildx ls
 
-      # - name: Cache docker layer
-      #   id: docker_cache_packages
-      #   uses: actions/cache@v1
-      #   with:
-      #     path: tmp/docker
-      #     key: v1-docker_cache-${{ matrix.tag }}-${{ hashFiles('Dockerfile*) }}
+      - name: Cache docker layer
+        id: docker_cache
+        uses: actions/cache@v1
+        with:
+          path: tmp/docker
+          key: docker_cache-${{ env.CACHE_VERSION }}-${{ hashFiles('Dockerfile*') }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            docker_cache-${{ env.CACHE_VERSION }}-
 
-      - name: Build the Docker image
+      - name: Build the Docker images
         run: |
-          docker buildx build \
-            --platform ${PLATFORM} \
-            --output=type=docker \
-            --cache-from=${DOCKER_REPO}:${DOCKER_CACHE_TAG}-${DOCKER_TAG} \
-            --tag=renovate \
-            --file=./${DOCKER_FILE} .
+          docker buildx bake -f docker/buildx.hcl -s cache.output=type=docker
 
-      - name: Test the Docker image
+      - name: Test the Docker full image
         run: |
-          docker run --rm -t renovate --version
+          docker run --rm -t ${DOCKER_REPO} --version
+
+      - name: Test the Docker slim image
+        run: |
+          docker run --rm -t ${DOCKER_REPO}:slim --version
 
       - name: Image history
-        run: docker history renovate
+        run: docker history ${DOCKER_REPO}
       - name: Image size
-        run: docker image ls | grep renovate
+        run: docker image ls | grep ${DOCKER_REPO}
