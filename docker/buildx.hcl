@@ -9,7 +9,6 @@ target "base" {
 }
 
 target "cache" {
-  cache-from = ["type=local,src=tmp/docker"]
 }
 
 target "renovate-slim" {
