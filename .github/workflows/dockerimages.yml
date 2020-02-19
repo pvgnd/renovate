@@ -49,8 +49,6 @@ jobs:
       - name: Build the Docker images
         run: |
           docker buildx bake -f docker/buildx.hcl \
-            --set renovate-full.cache-from=type=local,src=tmp/docker/full,mode=max \
-            --set renovate-slim.cache-from=type=local,src=tmp/docker/slim,mode=max \
             --set settings.output=type=docker
 
       - name: Test the Docker image
@@ -89,6 +87,4 @@ jobs:
       - name: Build the Docker images
         run: |
           docker buildx bake -f docker/buildx.hcl \
-            --set renovate-full.cache-from=type=local,src=tmp/docker/full,mode=max \
-            --set renovate-slim.cache-from=type=local,src=tmp/docker/slim,mode=max \
             default
