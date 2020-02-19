@@ -51,7 +51,7 @@ jobs:
       - name: Build the Docker images
         run: |
           docker buildx bake -f docker/buildx.hcl \
-            --set ${{ matrix.tag }}.cache-from=type=local,dest=tmp/docker,mode=max \
+            --set ${{ matrix.tag }}.cache-from=type=local,src=tmp/docker,mode=max \
             --set ${{ matrix.tag }}.cache-to=type=local,dest=tmp/docker,mode=max \
             --set ${{ matrix.tag }}.tags=${{ matrix.tag }} ${{ matrix.tag }} \
             --set ${{ matrix.tag }}.output=type=docker
