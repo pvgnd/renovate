@@ -19,7 +19,11 @@ jobs:
     name: Build image
     runs-on: ubuntu-latest
 
-    timeout-minutes: 20
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        tag: [renovate, renovate-slim]
 
     steps:
       - name: Set up Docker Buildx
@@ -37,27 +41,24 @@ jobs:
         uses: actions/cache@v1
         with:
           path: tmp/docker
-          key: docker_cache-${{ env.CACHE_VERSION }}-${{ hashFiles('Dockerfile*') }}-${{ hashFiles('**/yarn.lock') }}
+          key: docker_cache-${{ env.CACHE_VERSION }}-${{ matrix.tag }}-${{ hashFiles('Dockerfile*') }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            docker_cache-${{ env.CACHE_VERSION }}-
+            docker_cache-${{ env.CACHE_VERSION }}-${{ matrix.tag }}-
 
       - name: Prepare docker cache
         if: steps.docker_cache.outputs.cache-hit != 'true'
-        run: docker buildx bake -f docker/buildx.hcl base
+        run: |
+          [[ ! -f tmp/docker/index.json ]] && docker buildx bake -f docker/buildx.hcl base
 
       - name: Build the Docker images
         run: |
-          docker buildx bake -f docker/buildx.hcl --set cache.output=type=docker
+          docker buildx bake -f docker/buildx.hcl --set cache.output=type=docker --set cache.tags=${{ matrix.tag }}
 
-      - name: Test the Docker full image
+      - name: Test the Docker image
         run: |
-          docker run --rm -t ${DOCKER_REPO} --version
-
-      - name: Test the Docker slim image
-        run: |
-          docker run --rm -t ${DOCKER_REPO}:slim --version
+          docker run --rm -t ${{ matrix.tag }} --version
 
       - name: Image history
-        run: docker history ${DOCKER_REPO}
+        run: docker history ${{ matrix.tag }}
       - name: Image size
-        run: docker image ls | grep ${DOCKER_REPO}
+        run: docker image ls | grep ${{ matrix.tag }}
