@@ -41,6 +41,10 @@ jobs:
           restore-keys: |
             docker_cache-${{ env.CACHE_VERSION }}-
 
+      - name: Prepare docker cache
+        if: steps.docker_cache.outputs.cache-hit != 'true'
+        run: docker buildx bake -f docker/buildx.hcl base
+
       - name: Build the Docker images
         run: |
           docker buildx bake -f docker/buildx.hcl --set cache.output=type=docker
