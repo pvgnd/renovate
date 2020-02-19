@@ -101,4 +101,4 @@ jobs:
             default
 
       - name: Image size
-        run: docker image ls | grep ${{ matrix.tag }}
+        run: docker image ls | grep renovate
