@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'renovate/**'
+      - feat/gh-release
 
   pull_request:
 
@@ -21,7 +22,7 @@ jobs:
 
     strategy:
       matrix:
-        tag: [latest, slim]
+        tag: [slim] #latest
 
     env:
       DOCKER_FILE: Dockerfile.${{ matrix.tag }}
@@ -40,6 +41,15 @@ jobs:
           version: v0.3.1
 
       - uses: actions/checkout@v2
+
+      - run: docker builx ls
+
+      # - name: Cache docker layer
+      #   id: docker_cache_packages
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: tmp/docker
+      #     key: v1-docker_cache-${{ matrix.tag }}-${{ hashFiles('Dockerfile*) }}
 
       - name: Build the Docker image
         run: |
