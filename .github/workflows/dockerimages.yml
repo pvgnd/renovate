@@ -52,7 +52,7 @@ jobs:
 
       - name: Build the Docker images
         run: |
-          docker buildx bake -f docker/buildx.hcl --set cache.output=type=docker --set cache.tags=${{ matrix.tag }}
+          docker buildx bake -f docker/buildx.hcl --set cache.output=type=docker --set cache.tags=${{ matrix.tag }} ${{ matrix.tag }}
 
       - name: Test the Docker image
         run: |
