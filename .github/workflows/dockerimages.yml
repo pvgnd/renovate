@@ -42,7 +42,7 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - run: docker builx ls
+      - run: docker buildx ls
 
       # - name: Cache docker layer
       #   id: docker_cache_packages
