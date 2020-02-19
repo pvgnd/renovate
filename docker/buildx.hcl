@@ -4,7 +4,7 @@ group "default" {
 
 target "base" {
   dockerfile = "Dockerfile.slim",
-  cache-to = ["type=local,dest=tmp/docker,mode=max"]
+  cache-to = ["type=local,dest=tmp/docker"]
   target = "base"
 }
 
