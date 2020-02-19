@@ -10,6 +10,8 @@ env:
   DOCKER_CACHE_TAG: _cache
   DOCKER_REPO: renovate/renovate
   SKIP_JAVA_TESTS: true
+  node_version: 12
+  python_version: 3.8
 
 jobs:
   semantic-release:
@@ -23,12 +25,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: ${{ env.node_version }}
 
       - name: Set up Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8
+          python-version: ${{ env.python_version }}
 
       - name: Init platform
         id: init
@@ -52,6 +54,12 @@ jobs:
         with:
           path: ${{ steps.init.outputs.yarn_cache }}
           key: v1-${{ runner.os }}-yarn_cache-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Cache node_modules
+        uses: actions/cache@v1
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ env.node_version }}-yarn-${{ hashFiles('**/yarn.lock') }}
 
       - name: Installing dependencies
         shell: bash
