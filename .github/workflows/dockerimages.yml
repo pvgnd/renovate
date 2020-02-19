@@ -52,7 +52,8 @@ jobs:
         run: |
           docker buildx bake -f docker/buildx.hcl \
             --set ${{ matrix.tag }}.cache-to=type=local,dest=tmp/docker,mode=max \
-            --set ${{ matrix.tag }}.tags=${{ matrix.tag }} ${{ matrix.tag }}
+            --set ${{ matrix.tag }}.tags=${{ matrix.tag }} ${{ matrix.tag }} \
+            --set ${{ matrix.tag }}.output=type=image
 
       - name: Test the Docker image
         run: |
@@ -94,7 +95,7 @@ jobs:
         run: |
           docker buildx bake -f docker/buildx.hcl \
             --set renovate.cache-from=type=local,src=tmp/docker/full \
-            --set renovate.cache-from=type=local,src=tmp/docker/slim \
+            --set renovate-slim.cache-from=type=local,src=tmp/docker/slim \
             --set cache.output=type=image \
             default
 
